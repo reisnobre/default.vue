@@ -1,29 +1,48 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
     <router-view/>
+    <div id="refresh" v-if="updateExists">
+      <p>
+      Nova atualização encontrada!
+      </p>
+      <button @click="refreshApp">
+        Atualizar
+      </button>
+    </div>
   </div>
 </template>
-
-<style lang="scss">
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
-#nav {
-  padding: 30px;
-  a {
-    font-weight: bold;
-    color: #2c3e50;
-    &.router-link-exact-active {
-      color: #42b983;
+<script charset="utf-8">
+export default {
+  name: 'app',
+  data () {
+    return {
+      refreshing: false,
+      updateExists: false,
+      registration: null
+    }
+  },
+  created () {
+    document.addEventListener('swUpdated', this.showRefreshUI, { once: true })
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (this.refreshing) return
+      this.refreshing = true
+      window.location.reload()
+    })
+  },
+  methods: {
+    showRefreshUI (e) {
+      this.registration = e.detail
+      this.updateExists = true
+    },
+    refreshApp () {
+      this.updateExists = false
+      if (!this.registration || !this.registration.waiting) return
+      // send message to SW to skip the waiting and activate the new SW
+      this.registration.waiting.postMessage('skipWaiting')
     }
   }
 }
+</script>
+<style lang="scss">
+  @import "scss/main.scss";
 </style>
